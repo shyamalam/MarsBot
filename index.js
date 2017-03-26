@@ -29,13 +29,13 @@ server.post('/api/messages', connector.listen());
 //=========================================================
 
 // This is called the root dialog. It is the first point of entry for any message the bot receives
-var luisRecognizer = new builder.LuisRecognizer('https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/a9fbf9c5-a393-41e1-969c-595f2f1686b8?subscription-key=0a87682896924685b907806199be5e48&staging=true&verbose=true&timezoneOffset=0.0&q=');
+var luisRecognizer = new builder.LuisRecognizer('https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/a9fbf9c5-a393-41e1-969c-595f2f1686b8?subscription-key=0a87682896924685b907806199be5e48&staging=true&timezoneOffset=0.0&verbose=false&q=');
 var intentDialog = new builder.IntentDialog({recognizers: [luisRecognizer]});
 bot.dialog('/', intentDialog);
 
 intentDialog.matches(/\b(hi|hello|hey|howdy)\b/i, '/sayHi') //Check for greetings using regex
+	.matches('GoogleSearch', '/googleImages') //Check for LUIS intent to image search
     .matches('GetNews', '/topNews') //Check for LUIS intent to get news
-    .matches('AnalyseImage', '/analyseImage') //Check for LUIS intent to analyze image
 	.matches (/\b(dingus)\b/i,'/xd') //haha xd
     .onDefault(builder.DialogAction.send("Sorry, I didn't understand what you said.")); //Default message if all checks fail
 
@@ -49,7 +49,10 @@ bot.dialog('/sayHi', function(session) {
     session.send('Hi there!  Try saying things like "Get news in Toyko"');
     session.endDialog();
 });
-
+bot.dialog('/googleImages', function(session) {
+	imageSearch(session);
+	session.endDialog();
+});
 bot.dialog('/topNews', [
     function (session){
         // Ask the user which category they would like
@@ -117,3 +120,27 @@ function sendTopNews (session, results, body){
 		.attachments(cards);
 	session.send(msg);
 }
+
+
+function imageSearch (session){
+	// show user that we're processing
+	session.sendTyping();
+	// the value property in body contains an array of returned articles
+	var cards = [];
+	// iterate through all 10 articles returned by API
+		var url = "https://www.google.ca/search?q=google+images&source=lnms&tbm=isch&sa=X&ved=0ahUKEwi5_JqW6PPSAhVH1oMKHQKBAkgQ_AUICCgB&biw=1175&bih=616#tbm=isch&q=puppies";
+		cards.push(new builder.HeroCard(session)
+			.title("yay")
+			.subtitle("doggo")
+			.buttons([
+				// pressing this button opens url to article
+				builder.CardAction.openUrl(session, url, "Fluffer time")
+			]));
+	
+	var msg = new builder.Message(session)
+		.textFormat(builder.TextFormat.xml)
+		.attachmentLayout(builder.AttachmentLayout.carousel)
+		.attachments(cards);
+	session.send(msg);
+}
+
